@@ -1,0 +1,1 @@
+export const base_url = "https://impressa-7rao.onrender.com/api"

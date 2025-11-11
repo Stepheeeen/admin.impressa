@@ -9,13 +9,20 @@ import { Eye, Edit, Trash2, CheckCircle, Truck, Package } from "lucide-react"
 import { toast } from "sonner"
 import { base_url } from "@/constant/constant"
 
+interface DeliveryAddress {
+  address: string
+  state: string
+  country: string
+  phone: string
+}
+
 interface Order {
   _id: string
   user: string
   itemType: string
   quantity: number
   totalAmount: number
-  deliveryAddress: string
+  deliveryAddress: DeliveryAddress
   paymentRef: string
   status: "pending" | "paid" | "shipped" | "delivered"
   createdAt: string
@@ -29,7 +36,6 @@ interface OrdersTableProps {
 
 export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
   const [orders, setOrders] = useState<Order[]>([])
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const token = typeof window !== "undefined" ? localStorage.getItem("impressa_admin_token") : null
 
@@ -117,6 +123,7 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
                   <th className="text-left py-3 px-4 font-semibold">Amount</th>
                   <th className="text-left py-3 px-4 font-semibold">Quantity</th>
                   <th className="text-left py-3 px-4 font-semibold">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold">Delivery</th>
                   <th className="text-left py-3 px-4 font-semibold">Date</th>
                   <th className="text-left py-3 px-4 font-semibold">Actions</th>
                 </tr>
@@ -131,9 +138,17 @@ export function OrdersTable({ searchTerm, statusFilter }: OrdersTableProps) {
                     <td className="py-3 px-4">
                       <Badge className={statusColors[order.status]}>{order.status}</Badge>
                     </td>
-                    <td className="py-3 px-4 text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString("en-NG")}
+                    <td className="py-3 px-4 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <span>{order.deliveryAddress.address}</span>
+                        <span>{order.deliveryAddress.state}, {order.deliveryAddress.country}</span>
+                        <span className="text-gray-500">📱 {order.deliveryAddress.phone}</span>
+                        <small className="text-gray-400">
+                          Delivery: 3–7 days. Phone should be WhatsApp active; notifications will be sent via WhatsApp/email.
+                        </small>
+                      </div>
                     </td>
+                    <td className="py-3 px-4 text-gray-500">{new Date(order.createdAt).toLocaleDateString("en-NG")}</td>
                     <td className="py-3 px-4">
                       <div className="flex gap-2">
                         {order.status === "pending" && (

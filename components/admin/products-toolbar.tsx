@@ -26,7 +26,7 @@ export function ProductsToolbar({
 
         {/* Category Filter */}
         <div className="flex gap-2 overflow-scroll md:overflow-visible">
-          {["all", "electronics", "clothing", "home", "sports"].map((category) => (
+          {["all"].map((category) => (
             <Button
               key={category}
               variant={categoryFilter === category ? "default" : "outline"}
@@ -42,10 +42,6 @@ export function ProductsToolbar({
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
           Export

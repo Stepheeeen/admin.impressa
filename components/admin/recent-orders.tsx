@@ -16,7 +16,8 @@ const statusColors = {
 
 interface Order {
   _id: string
-  itemType: string
+  items?: { name?: string }[]
+  itemNames?: string[]
   totalAmount: number
   status: string
   paymentRef: string
@@ -81,9 +82,13 @@ export function RecentOrders() {
               <tbody>
                 {orders.map((order) => (
                   <tr key={order._id} className="border-b hover:bg-muted/50 transition-colors">
-                    <td className="py-3 px-4 font-medium">{order.paymentRef}</td>
-                    <td className="py-3 px-4">{order.itemType}</td>
-                    <td className="py-3 px-4">₦{order.totalAmount.toLocaleString()}</td>
+                      <td className="py-3 px-4 font-medium">{order.paymentRef}</td>
+                      <td className="py-3 px-4">
+                        {(order.items && order.items.length > 0)
+                          ? order.items.map((it) => it.name).join(", ")
+                          : (order.itemNames && order.itemNames.join(", ")) || "—"}
+                      </td>
+                      <td className="py-3 px-4">₦{order.totalAmount.toLocaleString()}</td>
                     <td className="py-3 px-4">
                       <Badge
                         className={

@@ -4,6 +4,7 @@ import { useState } from "react"
 import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { X, Plus } from "lucide-react"
 import { base_url } from "@/constant/constant"
 import {
@@ -20,9 +21,10 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
   const [title, setTitle] = useState("")
   const [itemType, setItemType] = useState("")
   const [category, setCategory] = useState("")
-  const [price, setPrice] = useState(0)
+  const [price, setPrice] = useState("")
   const [sizes, setSizes] = useState<string[]>([])
   const [colors, setColors] = useState("")
+  const [description, setDescription] = useState("")
 
   const [itemTypeOptions, setItemTypeOptions] = useState([
     "t-shirt",
@@ -38,8 +40,13 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
   ])
 
   const [categoryOptions, setCategoryOptions] = useState([
+    "all",
     "clothing",
+    "luxury dress",
+    "bags",
+    "shoes",
     "accessories",
+    "shorts",
     "home & living",
     "print items",
     "stickers",
@@ -55,6 +62,18 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
 
   // Sizes
   const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+  // Preset size maps for various categories
+  const SIZE_PRESETS: Record<string, string[] | "numeric"> = {
+    clothing: SIZE_OPTIONS,
+    "luxury dress": SIZE_OPTIONS,
+    shorts: ["28", "30", "32", "34", "36", "38", "40"],
+    bags: ["Small", "Medium", "Large"],
+    shoes: "numeric",
+    accessories: ["One Size"],
+  }
+
+  // custom size input for adding arbitrary sizes (or numeric shoe sizes)
+  const [customSizeInput, setCustomSizeInput] = useState("")
 
   // Images
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -89,6 +108,25 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
 
   const toggleSize = (size: string, checked: boolean) => {
     setSizes((prev) => (checked ? [...prev, size] : prev.filter((s) => s !== size)))
+  }
+
+  const addCustomSize = () => {
+    const val = customSizeInput.trim()
+    if (!val) return
+    // allow comma separated input to add multiple sizes
+    const parts = val.split(",").map((p) => p.trim()).filter(Boolean)
+    setSizes((prev) => {
+      const next = [...prev]
+      for (const p of parts) {
+        if (!next.includes(p)) next.push(p)
+      }
+      return next
+    })
+    setCustomSizeInput("")
+  }
+
+  const removeSize = (size: string) => {
+    setSizes((prev) => prev.filter((s) => s !== size))
   }
 
   const addCustomItemType = () => {
@@ -145,6 +183,7 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
           category,
           imageUrls: uploadedUrls,
           price,
+          description,
           sizes,
           colors: colors.split(",").map((c) => c.trim().toLowerCase()),
         },
@@ -157,15 +196,18 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
       setTitle("")
       setItemType("")
       setCategory("")
-      setPrice(0)
+      setPrice("")
       setSizes([])
       setColors("")
+      setDescription("")
       setImageFiles([])
       setImagePreviews([])
 
-    } catch (err) {
+    } catch (err:any) {
       console.error(err)
-      setError("Failed to create product. Try again.")
+      const serverMsg = err?.response?.data?.error || err?.message || ""
+      const combined = `Failed to create product. ${serverMsg}`.trim()
+      setError(combined)
     } finally {
       setLoading(false)
       setUploadingImg(false)
@@ -203,6 +245,10 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
           <div className="space-y-1">
             <label className="text-sm font-medium">Title</label>
             <Input placeholder="e.g. Premium Hoodie" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea placeholder="e.g. A premium quality hoodie" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           {/* ITEM TYPE DROPDOWN + CUSTOM ENTRY */}
@@ -288,7 +334,7 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
               type="number"
               placeholder="Enter selling price"
               value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
+              onChange={(e) => setPrice(e.target.value)}
             />
           </div>
 
@@ -296,19 +342,70 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
           <div className="space-y-1">
             <label className="text-sm font-medium">Available Sizes</label>
 
-            <div className="grid grid-cols-3 gap-2 mt-1">
-              {SIZE_OPTIONS.map((size) => {
-                const checked = sizes.includes(size)
-                return (
-                  <div key={size} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(val) => toggleSize(size, Boolean(val))}
-                    />
-                    <Label className="text-sm">{size}</Label>
-                  </div>
-                )
-              })}
+            <div className="mt-1">
+              {/* If category has presets, show them */}
+              {category && SIZE_PRESETS[category] && (
+                <div className="grid grid-cols-3 gap-2">
+                  {SIZE_PRESETS[category] === "numeric" ? (
+                    <div className="col-span-3">
+                      <p className="text-sm text-muted-foreground">Enter numeric shoe sizes (e.g. 38, 39, 40) or add custom below.</p>
+                    </div>
+                  ) : (
+                    (SIZE_PRESETS[category] as string[]).map((size) => {
+                      const checked = sizes.includes(size)
+                      return (
+                        <div key={size} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(val) => toggleSize(size, Boolean(val))}
+                          />
+                          <Label className="text-sm">{size}</Label>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+
+              {/* Show generic presets if no category selected or no preset exists */}
+              {!category && (
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {SIZE_OPTIONS.map((size) => {
+                    const checked = sizes.includes(size)
+                    return (
+                      <div key={size} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(val) => toggleSize(size, Boolean(val))}
+                        />
+                        <Label className="text-sm">{size}</Label>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Custom size input (works for any category) */}
+              <div className="flex gap-2 items-center mt-3">
+                <Input
+                  placeholder={category === "shoes" ? "e.g. 38,39" : "Add custom size (e.g. 30, XL, Large)"}
+                  value={customSizeInput}
+                  onChange={(e) => setCustomSizeInput(e.target.value)}
+                />
+                <Button type="button" onClick={addCustomSize}><Plus className="h-4 w-4" /></Button>
+              </div>
+
+              {/* List added sizes with remove option */}
+              {sizes.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {sizes.map((s) => (
+                    <div key={s} className="px-2 py-1 bg-muted rounded-full flex items-center gap-2 text-sm">
+                      <span>{s}</span>
+                      <button type="button" onClick={() => removeSize(s)} className="text-xs text-red-600">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

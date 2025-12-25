@@ -13,10 +13,10 @@ interface StatsCardProps {
 export function StatsCard({ title, value, description, icon: Icon, trend }: StatsCardProps) {
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-2 px-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-muted-foreground flex gap-3 items-center"><Icon className="h-4 w-4 text-primary" />{title}</p>
             <p className="text-2xl font-bold">{value}</p>
             <p
               className={cn(
@@ -26,9 +26,6 @@ export function StatsCard({ title, value, description, icon: Icon, trend }: Stat
             >
               {description}
             </p>
-          </div>
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Icon className="h-5 w-5 text-primary" />
           </div>
         </div>
       </CardContent>

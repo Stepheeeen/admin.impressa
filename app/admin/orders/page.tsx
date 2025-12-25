@@ -3,13 +3,13 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { OrdersTable } from "@/components/admin/orders-table"
+import OrdersTable from "@/components/admin/orders-table"
 import { Search, Download, Filter } from "lucide-react"
 
 export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-
+  const OrdersTableAny = OrdersTable as any
   return (
     <div className="space-y-6">
       <div>
@@ -33,7 +33,7 @@ export default function OrdersPage() {
 
           {/* Status Filter */}
           <div className="flex gap-2">
-            {["all", "pending", "shipped", "completed"].map((status) => (
+            {["all", "pending", "paid", "shipped", "delivered"].map((status) => (
               <Button
                 key={status}
                 variant={statusFilter === status ? "default" : "outline"}
@@ -57,7 +57,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <OrdersTable searchTerm={searchTerm} statusFilter={statusFilter} />
+      <OrdersTableAny searchTerm={searchTerm} statusFilter={statusFilter} />
     </div>
   )
 }

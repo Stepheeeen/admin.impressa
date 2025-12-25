@@ -1,0 +1,82 @@
+Summary of backend changes that affect the frontend and how to update the frontend to work correctly.
+
+Key frontend changes
+
+Orders: every item in order responses now has a guaranteed items[i].name property. Use items[i].name in the panel (not order.itemType or items[0].title).
+Orders: Order documents now persist an itemNames[] array. The controllers will use item.title, item.name, populated template/design titles, or itemNames[i] as fallback — so the UI can rely on items[i].name always being present.
+Product templates: imageUrls is an array (plural). sizes and colors are arrays and must be sent/updated as arrays. Editing templates must send full arrays (replace semantics), not single values.
+Routes: user-specific orders endpoint is /api/orders/user/me (no change to URL, just ordering fix on server). No frontend route changes required other than using items[i].name from responses.
+
+Examples and exact behavior
+
+Order responses — what to use in the frontend
+Use items[i].name for display (panel, tracking lists, order detail).
+items[i].name is derived in this order:
+item.title (if present on the item object)
+item.name (if present on the item object)
+populated template title: item.templateId?.title
+populated design title: item.designId?.title
+persisted order.itemNames[i]
+fallback: item-${i+1}
+Example GET /api/orders/:id response (snippet)
+{
+  "_id": "orderId123",
+  "items": [
+    {
+      "templateId": { "_id": "tpl1", "title": "Branded T‑Shirt" },
+      "quantity": 1,
+      "name": "Branded T‑Shirt"
+    },
+    {
+      "title": "Custom Mug",
+      "quantity": 2,
+      "name": "Custom Mug"
+    },
+    {
+      "quantity": 1,
+      "name": "item-3"
+    }
+  ],
+  "itemNames": ["Branded T‑Shirt", "Custom Mug"],
+  "totalAmount": 4500
+}
+
+Frontend action: replace any usage of order.itemType or items[0].title as the primary display name for the order — show the list of items using items[i].name.
+
+Admin/product template create & update — payload shape
+Create expects imageUrls: array of strings. sizes, colors, tags must be arrays when provided.
+Edit endpoints accept imageUrls, sizes, colors arrays (replace the stored arrays).
+Example create (POST)
+
+{
+  "title": "Branded T‑Shirt",
+  "itemType": "tshirt",
+  "category": "apparel",
+  "imageUrls": ["https://.../1.jpg", "https://.../2.jpg"],
+  "price": 2500,
+  "sizes": ["S","M","L"],
+  "colors": ["black","white"],
+  "tags": ["promo","cotton"],
+  "customizable": true,
+  "isFeatured": false,
+  "description": "High quality cotton t-shirt"
+}
+
+Example update (PATCH) — must send full arrays to replace values curl:
+
+curl -X PATCH "http://localhost:5000/api/templates/{id}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "imageUrls":["https://.../1.jpg","https://.../2.jpg"],
+    "sizes":["S","M","L","XL"],
+    "colors":["black","white"]
+  }'
+
+  Frontend action:
+
+When editing sizes/colors in the admin panel, send the full final arrays (e.g., ["S","M","L"]) instead of trying to send a single element add/remove operation.
+Use the imageUrls array for listing/previewing images — do not use imageUrl singular key.
+Minor notes for the frontend
+The controller returns transformed order objects (object form) — items array will include name property. Use that for all displays and tracking/status views.
+If the frontend relies on any server-side fallback (like using order.itemType when items are empty), update it to iterate items and display each items[i].name.
+If you need persistent canonical titles even if templates are deleted later, tell me and I can persist template titles into itemNames at order creation.

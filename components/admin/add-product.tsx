@@ -26,6 +26,11 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
   const [colors, setColors] = useState("")
   const [description, setDescription] = useState("")
 
+  // new fields required by backend/controller
+  const [customizable, setCustomizable] = useState(false)
+  const [isFeatured, setIsFeatured] = useState(false)
+  const [tags, setTags] = useState("")
+
   const [itemTypeOptions, setItemTypeOptions] = useState([
     "t-shirt",
     "hoodie",
@@ -155,11 +160,13 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
     try {
       if (imageFiles.length === 0) {
         setError("At least one image is required.")
+        setLoading(false)
         return
       }
 
       if (!itemType || !category) {
         setError("Select or create item type & category.")
+        setLoading(false)
         return
       }
 
@@ -175,24 +182,32 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
 
       const token = localStorage.getItem("impressa_admin_token")
 
+      // prepare payload matching backend controller expectations
+      const productPayload = {
+        title,
+        itemType,
+        category,
+        imageUrls: uploadedUrls,
+        price: Number(price),
+        sizes: sizes || [],
+        colors: colors ? colors.split(",").map((c) => c.trim().toLowerCase()).filter(Boolean) : [],
+        tags: tags ? tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean) : [],
+        customizable,
+        isFeatured,
+        description: description || null,
+      }
+
+      // send as { products: product } so controller can accept single object or array
       await axios.post(
         `${base_url}/templates`,
-        {
-          title,
-          itemType,
-          category,
-          imageUrls: uploadedUrls,
-          price,
-          description,
-          sizes,
-          colors: colors.split(",").map((c) => c.trim().toLowerCase()),
-        },
+        { products: productPayload },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
       onSuccess()
       onClose()
 
+      // reset form
       setTitle("")
       setItemType("")
       setCategory("")
@@ -200,6 +215,9 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
       setSizes([])
       setColors("")
       setDescription("")
+      setCustomizable(false)
+      setIsFeatured(false)
+      setTags("")
       setImageFiles([])
       setImagePreviews([])
 
@@ -417,6 +435,28 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
               value={colors}
               onChange={(e) => setColors(e.target.value)}
             />
+          </div>
+
+          {/* TAGS */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Tags (comma separated)</label>
+            <Input
+              placeholder="e.g. promo, cotton"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+            />
+          </div>
+
+          {/* FLAGS */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Checkbox checked={customizable} onCheckedChange={(v) => setCustomizable(Boolean(v))} />
+              <Label className="text-sm">Customizable</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={isFeatured} onCheckedChange={(v) => setIsFeatured(Boolean(v))} />
+              <Label className="text-sm">Featured</Label>
+            </div>
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}

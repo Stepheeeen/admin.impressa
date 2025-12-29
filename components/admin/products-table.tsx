@@ -33,16 +33,20 @@ interface Product {
   createdAt?: string
 }
 
-export function ProductsTable({ searchTerm, categoryFilter }: { searchTerm: string; categoryFilter: string }) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
+export function ProductsTable({
+  searchTerm,
+  categoryFilter,
+  refreshSignal,
+}: { searchTerm: string; categoryFilter: string; refreshSignal?: number }) {
+   const [products, setProducts] = useState<Product[]>([])
+   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+   const [loading, setLoading] = useState(true)
 
-  const [editOpen, setEditOpen] = useState(false)
-  const [editData, setEditData] = useState<Partial<Product>>({})
-  const [imagePreview, setImagePreview] = useState<string>("")
-  const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
-  const CATEGORY_OPTIONS = ["tshirt", "hoodie", "sweatshirt", "mug", "cap", "other"]
+   const [editOpen, setEditOpen] = useState(false)
+   const [editData, setEditData] = useState<Partial<Product>>({})
+   const [imagePreview, setImagePreview] = useState<string>("")
+   const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+   const CATEGORY_OPTIONS = ["tshirt", "hoodie", "sweatshirt", "mug", "cap", "other"]
 
   // ✅ axios instance with Bearer token
   const axiosAuth = axios.create({
@@ -67,6 +71,14 @@ export function ProductsTable({ searchTerm, categoryFilter }: { searchTerm: stri
       setLoading(false)
     }
   }
+
+  // reload when parent signals a refresh (increments)
+  useEffect(() => {
+    if (typeof refreshSignal === "number") {
+      loadProducts()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal])
 
   useEffect(() => {
     loadProducts()

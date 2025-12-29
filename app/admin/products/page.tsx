@@ -11,10 +11,9 @@ export default function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [openModal, setOpenModal] = useState(false)
 
-  const refreshData = () => {
-    // You can trigger a table reload here if needed
-    console.log("Product added — reload table")
-  }
+  // refreshSignal increments to tell ProductsTable to reload
+  const [refreshSignal, setRefreshSignal] = useState(0)
+  const refreshData = () => setRefreshSignal((s) => s + 1)
 
   return (
     <div className="space-y-6">
@@ -33,13 +32,17 @@ export default function ProductsPage() {
       <ProductsTable
         searchTerm={searchTerm}
         categoryFilter={categoryFilter}
+        refreshSignal={refreshSignal}
       />
 
       {/* Add Product Modal */}
       <AddProductModal
         open={openModal}
         onClose={() => setOpenModal(false)}
-        onSuccess={refreshData}
+        onSuccess={() => {
+          refreshData()
+          setOpenModal(false)
+        }}
       />
     </div>
   )

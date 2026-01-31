@@ -45,8 +45,17 @@ export function ProductsTable({
    const [editOpen, setEditOpen] = useState(false)
    const [editData, setEditData] = useState<Partial<Product>>({})
    const [imagePreview, setImagePreview] = useState<string>("")
+   const [customSizeInput, setCustomSizeInput] = useState("")
    const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
    const CATEGORY_OPTIONS = ["tshirt", "hoodie", "sweatshirt", "mug", "cap", "other"]
+
+  const normalizeSizes = (sizes: any) => {
+    if (!Array.isArray(sizes)) return []
+    const cleaned = sizes
+      .map((s) => (s === null || s === undefined ? "" : String(s).trim()))
+      .filter(Boolean)
+    return Array.from(new Set(cleaned))
+  }
 
   // ✅ axios instance with Bearer token
   const axiosAuth = axios.create({
@@ -126,11 +135,12 @@ export function ProductsTable({
       customizable: !!data.customizable,
       inStock: data.inStock !== undefined ? !!data.inStock : true,
       itemType: data.itemType || "",
-      sizes: Array.isArray(data.sizes) ? data.sizes : [],
+      sizes: normalizeSizes(data.sizes),
       createdAt: data.createdAt,
     }
     setEditData(normalized)
     setImagePreview("") // reset preview
+    setCustomSizeInput("")
     setEditOpen(true)
   }
 
@@ -170,10 +180,10 @@ export function ProductsTable({
         customizable: !!editData.customizable,
         inStock: !!editData.inStock,
         itemType: editData.itemType,
-        sizes: Array.isArray(editData.sizes) ? editData.sizes : [],
+        sizes: normalizeSizes(editData.sizes),
       }
 
-      await axiosAuth.put(`/templates/${editData._id}`, payload)
+      await axiosAuth.put(`/templates/${editData._id}/edit`, payload)
       await loadProducts() // Refresh the product list
       setEditOpen(false)
     } catch (error) {
@@ -501,7 +511,7 @@ export function ProductsTable({
                           const next = e.target.checked
                             ? [...(editData.sizes || []), s]
                             : (editData.sizes || []).filter((x) => x !== s)
-                          setEditData({ ...editData, sizes: next })
+                          setEditData({ ...editData, sizes: normalizeSizes(next) })
                         }}
                       />
                       <span>{s}</span>
@@ -509,6 +519,50 @@ export function ProductsTable({
                   )
                 })}
               </div>
+
+              {/* Custom sizes input */}
+              <div className="flex gap-2 items-center mt-3">
+                <Input
+                  placeholder="Add custom size (e.g. 42, 43, 45)"
+                  value={customSizeInput}
+                  onChange={(e) => setCustomSizeInput(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const val = customSizeInput.trim()
+                    if (!val) return
+                    const parts = val.split(",").map((p) => p.trim()).filter(Boolean)
+                    const current = Array.isArray(editData.sizes) ? editData.sizes : []
+                    setEditData({ ...editData, sizes: normalizeSizes([...current, ...parts]) })
+                    setCustomSizeInput("")
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+
+              {/* List added sizes with remove option */}
+              {normalizeSizes(editData.sizes).length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {normalizeSizes(editData.sizes).map((s) => (
+                    <div key={s} className="px-2 py-1 bg-muted rounded-full flex items-center gap-2 text-sm">
+                      <span>{s}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = normalizeSizes(editData.sizes).filter((x) => x !== s)
+                          setEditData({ ...editData, sizes: next })
+                        }}
+                        className="text-xs text-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ✅ Price */}

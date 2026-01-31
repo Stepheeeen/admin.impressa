@@ -333,7 +333,7 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
       const token = localStorage.getItem("impressa_admin_token")
       await axios.post(
         `${base_url}/templates`,
-        { products: payload },
+        { products: [payload] },
         { headers: { Authorization: `Bearer ${token}` } }
       )
       onSuccess && onSuccess()

@@ -82,7 +82,7 @@ export function RecentOrders() {
               <tbody>
                 {orders.map((order) => (
                   <tr key={order._id} className="border-b hover:bg-muted/50 transition-colors">
-                      <td className="py-3 px-4 font-medium">{order.paymentRef}</td>
+                      <td className="py-3 px-4 font-medium">{order._id}</td>
                       <td className="py-3 px-4">
                         {(order.items && order.items.length > 0)
                           ? order.items.map((it) => it.name).join(", ")

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, ShoppingCart, Package, Users, Menu, X, LogOut, Image as ImageIcon, Tags } from "lucide-react"
+import { LayoutDashboard, ShoppingCart, Package, Users, Menu, X, LogOut, Image as ImageIcon, Tags, Gift, Ticket, Wallet } from "lucide-react"
 
 interface SidebarProps {
   open: boolean
@@ -36,6 +36,21 @@ const navItems = [
     label: "Price bands",
     href: "/admin/price-bands",
     icon: Tags,
+  },
+  {
+    label: "Rewards",
+    href: "/admin/rewards",
+    icon: Gift,
+  },
+  {
+    label: "Coupons",
+    href: "/admin/coupons",
+    icon: Ticket,
+  },
+  {
+    label: "Wallets",
+    href: "/admin/wallets",
+    icon: Wallet,
   },
   // {
   //   label: "Customers",

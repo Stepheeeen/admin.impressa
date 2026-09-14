@@ -9,6 +9,7 @@ import { Eye, Edit, Trash2, CheckCircle, Truck, Package } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { base_url } from "@/constant/constant"
+import { Parcel, ParcelCard } from "@/components/admin/parcel-card"
 
 interface DeliveryAddress {
   address: string
@@ -42,6 +43,8 @@ interface Order {
   }>
   tracking?: { status?: string; code?: string; updatedAt?: string }
   statusHistory?: Array<{ status: string; at: string }>
+  // One per seller for marketplace orders; empty for older orders.
+  fulfilments?: Parcel[]
 }
   const [loading, setLoading] = useState(false)
   const [trackingInputs, setTrackingInputs] = useState<Record<string, { status?: string; code?: string }>>({})
@@ -292,6 +295,25 @@ interface Order {
                         </tbody>
                       </table>
                     </div>
+
+                    {viewOrder.fulfilments && viewOrder.fulfilments.length > 0 && (
+                      <div className="mt-6 space-y-3">
+                        <h4 className="font-semibold">Parcels by seller</h4>
+                        {viewOrder.fulfilments.map((parcel) => (
+                          <ParcelCard
+                            key={parcel._id}
+                            parcel={parcel}
+                            onChanged={async () => {
+                              const res = await axios.get(`${base_url}/orders/${viewOrder._id}`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                              })
+                              setViewOrder(res.data)
+                              setOrders((prev) => prev.map((o) => (o._id === viewOrder._id ? { ...o, ...res.data } : o)))
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {viewOrder.statusHistory && viewOrder.statusHistory.length > 0 && (
                       <div className="mt-6">

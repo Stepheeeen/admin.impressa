@@ -32,6 +32,9 @@ interface Product {
   itemType?: string
   sizes?: string[]
   videoUrl?: string | null
+  merchant?: { _id: string; businessName: string } | null
+  hidden?: boolean
+  stockQuantity?: number | null
   createdAt?: string
 }
 
@@ -146,6 +149,18 @@ export function ProductsTable({
     setImagePreview("") // reset preview
     setCustomSizeInput("")
     setEditOpen(true)
+  }
+
+  // Hidden products disappear from the website and app, but orders that include them are unaffected.
+  const handleToggleHidden = async (product: Product) => {
+    const hidden = !product.hidden
+    if (hidden && !confirm(`Hide "${product.title}" from customers?`)) return
+    try {
+      await axiosAuth.patch(`/admin/products/${product._id}/visibility`, { hidden })
+      setProducts((prev) => prev.map((p) => (p._id === product._id ? { ...p, hidden } : p)))
+    } catch (error) {
+      alert(apiError(error, "Couldn't change the product's visibility."))
+    }
   }
 
   // ✅ delete product
@@ -285,7 +300,14 @@ export function ProductsTable({
                       </td>
 
                       <td className="py-3 px-4">
-                        <div className="capitalize font-medium">{product.title}</div>
+                        <div className="capitalize font-medium">
+                          {product.title}
+                          {product.hidden && <Badge className="ml-2 bg-gray-200 text-gray-700">Hidden</Badge>}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Sold by {product.merchant?.businessName ?? "Impressa"}
+                          {typeof product.stockQuantity === "number" && ` · ${product.stockQuantity} in stock`}
+                        </div>
                         {product.description && (
                           <div className="text-xs text-muted-foreground mt-1 max-w-xl truncate">{product.description}</div>
                         )}
@@ -339,6 +361,9 @@ export function ProductsTable({
                             disabled={loading}
                           >
                             {product.inStock ? 'Mark Out' : 'Mark In'}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleToggleHidden(product)}>
+                            {product.hidden ? "Show" : "Hide"}
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(product._id)}>
                             <Edit className="h-4 w-4" />

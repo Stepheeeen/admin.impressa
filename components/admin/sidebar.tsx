@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, ShoppingCart, Package, Users, Menu, X, LogOut, Image as ImageIcon, Tags, Gift, Ticket, Wallet } from "lucide-react"
+import { LayoutDashboard, ShoppingCart, Package, Users, Menu, X, LogOut, Image as ImageIcon, Tags, Gift, Ticket, Wallet, Store, RotateCcw, Banknote } from "lucide-react"
 
 interface SidebarProps {
   open: boolean
@@ -26,6 +26,21 @@ const navItems = [
     label: "Products",
     href: "/admin/products",
     icon: Package,
+  },
+  {
+    label: "Merchants",
+    href: "/admin/merchants",
+    icon: Store,
+  },
+  {
+    label: "Returns",
+    href: "/admin/returns",
+    icon: RotateCcw,
+  },
+  {
+    label: "Payouts",
+    href: "/admin/payouts",
+    icon: Banknote,
   },
   {
     label: "Banners",

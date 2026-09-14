@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { base_url } from "@/constant/constant"
-import { set } from "date-fns"
+import { apiError } from "@/lib/admin-api"
+import { MAX_VIDEO_MB, uploadToCloudinary } from "@/lib/cloudinary"
 
 interface Product {
   _id: string
@@ -30,6 +31,7 @@ interface Product {
   inStock?: boolean
   itemType?: string
   sizes?: string[]
+  videoUrl?: string | null
   createdAt?: string
 }
 
@@ -46,6 +48,7 @@ export function ProductsTable({
    const [editData, setEditData] = useState<Partial<Product>>({})
    const [imagePreview, setImagePreview] = useState<string>("")
    const [customSizeInput, setCustomSizeInput] = useState("")
+   const [videoUploading, setVideoUploading] = useState(false)
    const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
    const CATEGORY_OPTIONS = ["tshirt", "hoodie", "sweatshirt", "mug", "cap", "other"]
 
@@ -136,6 +139,7 @@ export function ProductsTable({
       inStock: data.inStock !== undefined ? !!data.inStock : true,
       itemType: data.itemType || "",
       sizes: normalizeSizes(data.sizes),
+      videoUrl: data.videoUrl || "",
       createdAt: data.createdAt,
     }
     setEditData(normalized)
@@ -181,6 +185,8 @@ export function ProductsTable({
         inStock: !!editData.inStock,
         itemType: editData.itemType,
         sizes: normalizeSizes(editData.sizes),
+        // An empty value removes the video.
+        videoUrl: editData.videoUrl || "",
       }
 
       await axiosAuth.put(`/templates/${editData._id}/edit`, payload)
@@ -188,6 +194,7 @@ export function ProductsTable({
       setEditOpen(false)
     } catch (error) {
       console.error('Error saving product:', error)
+      alert(apiError(error, "Couldn't save the product. Try again."))
     } finally {
       setLoading(false)
     }
@@ -440,6 +447,46 @@ export function ProductsTable({
               />
             </div>
 
+            {/* ✅ Video */}
+            <div className="space-y-2">
+              <Label>Product Video (optional)</Label>
+              {editData.videoUrl ? (
+                <div className="flex items-center gap-3">
+                  <video src={editData.videoUrl} className="w-40 rounded border" controls muted />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditData((prev) => ({ ...prev, videoUrl: "" }))}
+                  >
+                    Remove video
+                  </Button>
+                </div>
+              ) : null}
+              <Input
+                type="file"
+                accept="video/mp4,video/quicktime,video/webm"
+                disabled={videoUploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setVideoUploading(true)
+                  try {
+                    const url = await uploadToCloudinary(file, "video")
+                    setEditData((prev) => ({ ...prev, videoUrl: url }))
+                  } catch (err) {
+                    alert(apiError(err, "Video upload failed. Try again."))
+                  } finally {
+                    setVideoUploading(false)
+                    e.target.value = ""
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                {videoUploading ? "Uploading video..." : `MP4, MOV or WebM, up to ${MAX_VIDEO_MB} MB. Save to apply.`}
+              </p>
+            </div>
+
             {/* ✅ Title */}
             <div>
               <Label>Title</Label>
@@ -598,7 +645,7 @@ export function ProductsTable({
             </div>
 
             {/* ✅ Save */}
-            <Button className="w-full" onClick={saveEdit} disabled={loading}>
+            <Button className="w-full" onClick={saveEdit} disabled={loading || videoUploading}>
               {loading ? "Saving..." : "Save Changes"}
             </Button>
           </div>

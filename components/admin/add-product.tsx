@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { MAX_VIDEO_MB, uploadToCloudinary as uploadVideo } from "@/lib/cloudinary"
 
 export function AddProductModal({ open, onClose, onSuccess }: any) {
   const [title, setTitle] = useState("")
@@ -30,6 +31,11 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
   const [customizable, setCustomizable] = useState(false)
   const [isFeatured, setIsFeatured] = useState(false)
   const [tags, setTags] = useState("")
+
+  // optional product video, uploaded as soon as it's chosen
+  const [videoUrl, setVideoUrl] = useState("")
+  const [uploadingVideo, setUploadingVideo] = useState(false)
+  const [videoError, setVideoError] = useState("")
 
   const [itemTypeOptions, setItemTypeOptions] = useState([
     "t-shirt",
@@ -118,6 +124,21 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
     setImagePreviews(files.map((file: any) => URL.createObjectURL(file)))
   }
 
+  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setVideoError("")
+    setUploadingVideo(true)
+    try {
+      setVideoUrl(await uploadVideo(file, "video"))
+    } catch (err: any) {
+      setVideoError(err?.message || "Video upload failed. Try again.")
+    } finally {
+      setUploadingVideo(false)
+      e.target.value = ""
+    }
+  }
+
   const toggleSize = (size: string, checked: boolean) => {
     setSizes((prev) => (checked ? [...prev, size] : prev.filter((s) => s !== size)))
   }
@@ -173,6 +194,7 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
       customizable,
       isFeatured,
       description: description || null,
+      videoUrl: videoUrl || null,
     }
   }
 
@@ -254,6 +276,8 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
     setImageFiles([])
     setImagePreviews([])
     setCustomSizeInput("")
+    setVideoUrl("")
+    setVideoError("")
   }
 
   const editBatchItem = (index: number) => {
@@ -270,6 +294,7 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
     setCustomizable(!!item.customizable)
     setIsFeatured(!!item.isFeatured)
     setTags((item.tags || []).join(", "))
+    setVideoUrl(item.videoUrl || "")
     // show existing imageUrls as previews (no local File objects)
     setImageFiles([])
     setImagePreviews((item.imageUrls || []).map((u: string) => u))
@@ -370,6 +395,31 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
                 {imagePreviews.map((src, idx) => (
                   <img key={idx} src={src} alt="preview" className="w-full h-24 object-cover rounded-md border" />
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* VIDEO */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Product Video (optional)</label>
+            <Input
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm"
+              onChange={handleVideoChange}
+              disabled={uploadingVideo}
+            />
+            <p className="text-xs text-muted-foreground">
+              {uploadingVideo
+                ? "Uploading video..."
+                : `MP4, MOV or WebM, up to ${MAX_VIDEO_MB} MB. Customers tap to play it on the product page.`}
+            </p>
+            {videoError && <p className="text-red-500 text-xs">{videoError}</p>}
+            {videoUrl && (
+              <div className="flex items-center gap-3 mt-2">
+                <video src={videoUrl} className="w-40 rounded-md border" controls muted />
+                <Button type="button" variant="ghost" size="sm" onClick={() => setVideoUrl("")}>
+                  Remove video
+                </Button>
               </div>
             )}
           </div>
@@ -587,12 +637,12 @@ export function AddProductModal({ open, onClose, onSuccess }: any) {
             <Button
               type="button"
               onClick={addToBatch}
-              disabled={loading || uploadingImg || !title || !itemType || !category || !price}
+              disabled={loading || uploadingImg || uploadingVideo || !title || !itemType || !category || !price}
             >
               {editingIndex !== null ? "Update Queued" : "Add to batch"}
             </Button>
 
-            <Button type="submit" className="bg-indigo-600" disabled={loading || uploadingImg}>
+            <Button type="submit" className="bg-indigo-600" disabled={loading || uploadingImg || uploadingVideo}>
               Create single
             </Button>
 

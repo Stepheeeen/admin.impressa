@@ -40,7 +40,8 @@ interface Order {
     variant?: string
     options?: Record<string, any>
   }>
-  tracking?: { status?: string; code?: string }
+  tracking?: { status?: string; code?: string; updatedAt?: string }
+  statusHistory?: Array<{ status: string; at: string }>
 }
   const [loading, setLoading] = useState(false)
   const [trackingInputs, setTrackingInputs] = useState<Record<string, { status?: string; code?: string }>>({})
@@ -87,7 +88,10 @@ interface Order {
   }
 
   // ✅ Tracking update (status + code)
+  // In transit or ready for pickup marks the order shipped, and delivered marks it delivered.
+  // The backend notifies the customer when the order status changes.
   const updateTracking = async (id: string, tracking: { status?: string; code?: string }) => {
+    setUpdatingId(id)
     try {
       const res = await axios.patch(
         `${base_url}/orders/${id}/tracking`,
@@ -95,9 +99,23 @@ interface Order {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       toast.success(res.data.message || "Tracking updated")
-      setOrders((prev:any) => prev.map((o:any) => (o._id === id ? { ...o, tracking } : o)))
+      const updated = res.data.order
+      setOrders((prev:any) =>
+        prev.map((o:any) =>
+          o._id === id
+            ? { ...o, status: updated?.status ?? o.status, tracking: updated?.tracking ?? tracking, statusHistory: updated?.statusHistory ?? o.statusHistory }
+            : o
+        )
+      )
+      setTrackingInputs((prev) => {
+        const next = { ...prev }
+        delete next[id]
+        return next
+      })
     } catch (err:any) {
       toast.error(err.response?.data?.error || "Failed to update tracking")
+    } finally {
+      setUpdatingId(null)
     }
   }
 
@@ -182,6 +200,7 @@ interface Order {
                       <div className="flex gap-2 items-center">
                         <div className="flex items-center gap-2">
                           <select
+                            title="In transit or Ready for pickup marks the order shipped; Delivered marks it delivered. The customer is notified."
                             className="border rounded h-8 px-2 bg-background text-sm"
                             value={(trackingInputs[order._id]?.status) ?? order.tracking?.status ?? ""}
                             onChange={(e) => setTrackingInputs((prev) => ({ ...prev, [order._id]: { ...(prev[order._id] || {}), status: e.target.value } }))}
@@ -273,6 +292,20 @@ interface Order {
                         </tbody>
                       </table>
                     </div>
+
+                    {viewOrder.statusHistory && viewOrder.statusHistory.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="font-semibold mb-2">Status history</h4>
+                        <ul className="space-y-1 text-sm">
+                          {viewOrder.statusHistory.map((entry, idx) => (
+                            <li key={idx} className="flex justify-between gap-4 border-b py-1">
+                              <span className="capitalize">{entry.status}</span>
+                              <span className="text-muted-foreground">{new Date(entry.at).toLocaleString("en-NG")}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     <div className="mt-4 flex justify-end">
                       <Button onClick={() => setViewOrder(null)}>Close</Button>

@@ -37,6 +37,8 @@ const ENTRY_LABELS: Record<string, string> = {
   "check-in": "Daily check-in",
   "scratch-card": "Scratch card",
   adjustment: "Adjustment",
+  refund: "Refund",
+  "group-buy": "Group buy savings",
   checkout: "Checkout",
   expiry: "Expired",
 }
